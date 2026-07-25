@@ -206,9 +206,11 @@ export default {
           response = await env.ASSETS.fetch(new Request(new URL("/index.html", url), request));
           break;
         case "/mcp":
+        response = await SkyMoodMCP.serve("/mcp").fetch(request, env, ctx);
+        break;
         case "/sse":
-          response = await SkyMoodMCP.serveSSE("/sse").fetch(request, env, ctx);
-          break;
+        response = await SkyMoodMCP.serveSSE("/sse").fetch(request, env, ctx);
+        break;
         case "/api/sky":
           response = request.method === "POST"
             ? await handleSkyTool(request, env)
