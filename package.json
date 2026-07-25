@@ -1,0 +1,27 @@
+{
+  "name": "skymood-compass-cf",
+  "version": "0.4.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "description": "SkyMood Compass - AstroMesh Event #6 MCP server with western sky profile + Open-Meteo weather + deterministic compass recommendation.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "secret:set:astro": "wrangler secret put FREE_ASTROLOGY_API_KEY"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "agents": "^0.0.67",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240821.0",
+    "typescript": "^5.5.0",
+    "wrangler": "^3.78.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

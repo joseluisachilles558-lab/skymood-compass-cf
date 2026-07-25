@@ -1,0 +1,29 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "skymood-compass-cf",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "MCP_OBJECT",
+        "class_name": "SkyMoodMCP"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["SkyMoodMCP"]
+    }
+  ],
+  "vars": {
+    "ENVIRONMENT": "production"
+  }
+  // FREE_ASTROLOGY_API_KEY set via: wrangler secret put FREE_ASTROLOGY_API_KEY
+}

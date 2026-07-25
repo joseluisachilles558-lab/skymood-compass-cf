@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SkyMood Compass</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <h1>SkyMood Compass</h1>
+      <p class="subtitle">Western sky profile + current weather + optional mood = today's reflective compass.</p>
+    </header>
+
+    <section class="card">
+      <h2>Your birth</h2>
+      <label>Birth date
+        <input id="birth_date" type="date" value="1995-07-25" required />
+      </label>
+      <label>Birth time
+        <input id="birth_time" type="time" value="12:00" required />
+      </label>
+      <label>Birth latitude
+        <input id="birth_lat" type="number" step="0.0001" value="10.8231" required />
+      </label>
+      <label>Birth longitude
+        <input id="birth_lon" type="number" step="0.0001" value="106.6297" required />
+      </label>
+      <label>Birth timezone offset (UTC ±)
+        <input id="birth_tz" type="number" min="-12" max="14" value="7" required />
+      </label>
+    </section>
+
+    <section class="card">
+      <h2>Right now</h2>
+      <label>Current latitude
+        <input id="cur_lat" type="number" step="0.0001" value="37.7749" required />
+      </label>
+      <label>Current longitude
+        <input id="cur_lon" type="number" step="0.0001" value="-122.4194" required />
+      </label>
+      <label>Current IANA timezone
+        <input id="cur_tz" type="text" value="America/Los_Angeles" required />
+      </label>
+      <label>Mood score (0-10, optional)
+        <input id="mood" type="number" min="0" max="10" />
+      </label>
+      <button id="run">Get my compass</button>
+    </section>
+
+    <section class="card" id="out" hidden>
+      <h2>Today's compass</h2>
+      <div id="sky"></div>
+      <div id="wx"></div>
+      <div id="rec"></div>
+      <p class="disclaimer">Reflective practice only - not medical, financial, legal, or predictive advice.</p>
+    </section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>
