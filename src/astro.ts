@@ -1,12 +1,6 @@
 // SkyMood Compass - western sky profile client (Free Astrology API)
-// Step 4B: corrected request body per live verification in Step 3B.
-//   - POST https://json.freeastrologyapi.com/western/planets
-//   - Content-Type: application/json
-//   - x-api-key: ${FREE_ASTROLOGY_API_KEY}  (read from env, NEVER hardcoded)
-//   - config.observation_point singular
-//   - ayanamsha tropical
-//   - language en
-//   - timezone is numeric UTC offset
+// POST https://json.freeastrologyapi.com/western/planets
+// x-api-key is read from env as FREE_ASTROLOGY_API_KEY, never hardcoded.
 
 export interface WesternSkyRequest {
   year: number;
@@ -43,6 +37,7 @@ export interface WesternSkyProfile {
 function deriveMoonPhase(sunDegree: number, moonDegree: number): { angle: number; phase: string } {
   const angle = (moonDegree - sunDegree + 360) % 360;
   let phase: string;
+
   if (angle < 22.5 || angle >= 337.5) phase = "new";
   else if (angle < 67.5) phase = "waxing crescent";
   else if (angle < 112.5) phase = "first quarter";
@@ -51,10 +46,40 @@ function deriveMoonPhase(sunDegree: number, moonDegree: number): { angle: number
   else if (angle < 247.5) phase = "waning gibbous";
   else if (angle < 292.5) phase = "last quarter";
   else phase = "waning crescent";
+
   return { angle, phase };
 }
 
-export async function getWesternSkyProfile(apiKey: string, req: WesternSkyRequest): Promise<WesternSkyProfile> {
+function getTopLevelKeys(value: unknown): string {
+  if (!value || typeof value !== "object") return "";
+  return Object.keys(value as Record<string, unknown>).join(", ");
+}
+
+function findPlanetArray(value: unknown): unknown[] | null {
+  if (Array.isArray(value)) return value;
+
+  if (!value || typeof value !== "object") return null;
+  const obj = value as Record<string, unknown>;
+
+  for (const key of ["output", "data", "result", "planets"]) {
+    const candidate = obj[key];
+    if (Array.isArray(candidate)) return candidate;
+
+    if (candidate && typeof candidate === "object") {
+      const nested = candidate as Record<string, unknown>;
+      for (const nestedKey of ["output", "data", "result", "planets"]) {
+        if (Array.isArray(nested[nestedKey])) return nested[nestedKey] as unknown[];
+      }
+    }
+  }
+
+  return null;
+}
+
+export async function getWesternSkyProfile(
+  apiKey: string,
+  req: WesternSkyRequest
+): Promise<WesternSkyProfile> {
   if (!apiKey || apiKey.length < 16) {
     throw new Error("FREE_ASTROLOGY_API_KEY missing or too short");
   }
@@ -87,29 +112,36 @@ export async function getWesternSkyProfile(apiKey: string, req: WesternSkyReques
   });
 
   if (!resp.ok) {
-    const errText = await resp.text();
-    throw new Error(`Free Astrology API ${resp.status}: ${errText.slice(0, 200)}`);
+    throw new Error(`Free Astrology API returned HTTP ${resp.status}`);
   }
 
-  const raw = (await resp.json()) as any[];
-  if (!Array.isArray(raw)) {
-    throw new Error("Free Astrology API returned non-array response");
+  const parsed = await resp.json();
+  const raw = findPlanetArray(parsed);
+
+  if (!raw) {
+    const topLevelKeys = getTopLevelKeys(parsed);
+    throw new Error(
+      `Free Astrology API returned non-array response (status ${resp.status}, top-level keys: ${topLevelKeys})`
+    );
   }
 
-  const bodies: CelestialBody[] = raw.map((b: any) => ({
-    name: b?.planet?.en ?? "Unknown",
-    fullDegree: Number(b?.fullDegree ?? 0),
-    normDegree: Number(b?.normDegree ?? 0),
-    isRetro: b?.isRetro === "True" || b?.isRetro === "true",
-    zodiacSignNumber: Number(b?.zodiac_sign?.number ?? 0),
-    zodiacSignName: String(b?.zodiac_sign?.name?.en ?? "unknown"),
-  }));
+  const bodies: CelestialBody[] = raw.map((item: unknown) => {
+    const b = (item || {}) as Record<string, any>;
+
+    return {
+      name: String(b?.planet?.en ?? b?.name ?? b?.planet ?? "Unknown"),
+      fullDegree: Number(b?.fullDegree ?? 0),
+      normDegree: Number(b?.normDegree ?? 0),
+      isRetro: b?.isRetro === true || b?.isRetro === "True" || b?.isRetro === "true",
+      zodiacSignNumber: Number(b?.zodiac_sign?.number ?? 0),
+      zodiacSignName: String(b?.zodiac_sign?.name?.en ?? b?.zodiacSignName ?? b?.sign ?? "unknown"),
+    };
+  });
 
   const sun = bodies.find((x) => x.name === "Sun");
   const moon = bodies.find((x) => x.name === "Moon");
   const asc = bodies.find((x) => x.name === "Ascendant");
   const retrogrades = bodies.filter((x) => x.isRetro).map((x) => x.name);
-
   const moonPhaseInfo =
     sun && moon ? deriveMoonPhase(sun.fullDegree, moon.fullDegree) : { angle: 0, phase: "unknown" };
 
@@ -121,6 +153,10 @@ export async function getWesternSkyProfile(apiKey: string, req: WesternSkyReques
     moonPhase: moonPhaseInfo.phase,
     moonPhaseAngle: moonPhaseInfo.angle,
     retrogrades,
-    birthLocation: { latitude: req.latitude, longitude: req.longitude, timezone: req.timezone },
+    birthLocation: {
+      latitude: req.latitude,
+      longitude: req.longitude,
+      timezone: req.timezone,
+    },
   };
 }
